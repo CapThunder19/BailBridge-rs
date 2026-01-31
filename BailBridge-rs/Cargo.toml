@@ -1,0 +1,22 @@
+[package]
+name = "BailBridge-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+argon2 = "0.5.3"
+axum = "0.8.8"
+chrono = { version = "0.4.38", features = ["serde"] }
+dotenvy = "0.15.7"
+jsonwebtoken = { version = "10.3.0", default-features = false, features = ["aws_lc_rs"] }
+password-hash = "0.5.0"
+rand_core = { version = "0.9.5", features = ["os_rng"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "uuid", "chrono"] }
+tokio = { version = "1.49.0", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["cors", "trace"] }
+tracing-subscriber = "0.3.22"
+utoipa-swagger-ui = "9.0.2"
+uuid = { version = "1.20.0", features = ["v4", "serde"] }
+validator = { version = "0.20.0", features = ["derive"] }
