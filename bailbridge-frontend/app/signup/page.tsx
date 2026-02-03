@@ -20,7 +20,7 @@ const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  role: z.enum(['user', 'admin']),
+  role: z.enum(['user', 'lawyer', 'judge']),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -52,12 +52,28 @@ export default function SignupPage() {
       );
       
       localStorage.setItem('token', response.token);
+      localStorage.setItem('role', response.role);
       
       toast.success('Account created!', {
         description: 'Welcome to BailBridge. Redirecting...',
       });
       
-      setTimeout(() => router.push('/'), 500);
+      // Role-based redirect
+      setTimeout(() => {
+        switch (response.role) {
+          case 'lawyer':
+            router.push('/dashboard/lawyer');
+            break;
+          case 'judge':
+            router.push('/dashboard/judge');
+            break;
+          case 'user':
+            router.push('/dashboard/user');
+            break;
+          default:
+            router.push('/');
+        }
+      }, 500);
     } catch (err) {
       let errorMessage = 'Registration failed';
       
@@ -270,14 +286,15 @@ export default function SignupPage() {
               <Label htmlFor="role" className="text-gray-300">Role</Label>
               <Select
                 defaultValue="user"
-                onValueChange={(value) => setValue('role', value as 'user' | 'admin')}
+                onValueChange={(value) => setValue('role', value as 'user' | 'lawyer' | 'judge')}
               >
                 <SelectTrigger className="bg-[#2E3F4D] border-[#3A4B59] text-white focus:border-[#FF9B51] focus:ring-[#FF9B51]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#2E3F4D] border-[#3A4B59]">
                   <SelectItem value="user" className="text-white focus:bg-[#3A4B59]">User</SelectItem>
-                  <SelectItem value="admin" className="text-white focus:bg-[#3A4B59]">Admin</SelectItem>
+                  <SelectItem value="lawyer" className="text-white focus:bg-[#3A4B59]">Lawyer</SelectItem>
+                  <SelectItem value="judge" className="text-white focus:bg-[#3A4B59]">Judge</SelectItem>
                 </SelectContent>
               </Select>
             </div>

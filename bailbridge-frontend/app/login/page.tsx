@@ -36,12 +36,28 @@ export default function LoginPage() {
     try {
       const response = await api.login(data.email, data.password);
       localStorage.setItem('token', response.token);
+      localStorage.setItem('role', response.role);
       
       toast.success('Welcome back!', {
         description: 'You have successfully logged in.',
       });
       
-      setTimeout(() => router.push('/'), 500);
+      // Role-based redirect
+      setTimeout(() => {
+        switch (response.role) {
+          case 'lawyer':
+            router.push('/dashboard/lawyer');
+            break;
+          case 'judge':
+            router.push('/dashboard/judge');
+            break;
+          case 'user':
+            router.push('/dashboard/user');
+            break;
+          default:
+            router.push('/');
+        }
+      }, 500);
     } catch (err) {
       toast.error('Login failed', {
         description: err instanceof Error ? err.message : 'Invalid credentials',

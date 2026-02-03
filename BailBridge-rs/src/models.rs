@@ -16,7 +16,15 @@ pub struct RegisterUser {
     pub username: String,
     pub email: String,
     pub password: String,
-    pub role: String,
+    pub role: UserRole,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum UserRole {
+    User,
+    Lawyer,
+    Judge,
 }
 
 #[derive(Deserialize)]

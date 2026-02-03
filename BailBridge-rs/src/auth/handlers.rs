@@ -17,6 +17,7 @@ use crate::{
 #[derive(Serialize)]
 pub struct AuthResponse {
     pub token: String,
+    pub role: String,
 }
 
 
@@ -29,20 +30,21 @@ pub async fn register_user( State((db, config)): State<(DbPool, Config)>, Json(p
         .to_string();
 
     let user_id = Uuid::new_v4();
+    let role_str = format!("{:?}", payload.role).to_lowercase();
 
     sqlx::query("INSERT INTO users (id, username, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)")
         .bind(user_id)
         .bind(&payload.username)
         .bind(&payload.email)
         .bind(&hash_password)
-        .bind(&payload.role)
+        .bind(&role_str)
         .execute(&db)
         .await
         .map_err(|e| (StatusCode::BAD_REQUEST, format!("Failed to create user: {}", e)))?;
 
-    let token = create_jwt(&user_id.to_string(), &payload.role, &config.jwt_secret)
+    let token = create_jwt(&user_id.to_string(), &role_str, &config.jwt_secret)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create JWT: {}", e)))?;
-    Ok(Json(AuthResponse { token }))
+    Ok(Json(AuthResponse { token, role: role_str }))
 }
 
 
@@ -76,5 +78,5 @@ pub async fn login_user( State((db, config)): State<(DbPool, Config)>, Json(payl
 
     let token = create_jwt(&id.to_string(), &role, &config.jwt_secret)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create JWT: {}", e)))?;
-    Ok(Json(AuthResponse { token }))
+    Ok(Json(AuthResponse { token, role }))
 }

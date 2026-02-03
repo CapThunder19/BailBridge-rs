@@ -57,19 +57,27 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex flex-wrap gap-4 justify-center"
+          className="flex flex-col items-center gap-6"
         >
-          <Link href="/login">
-            <Button size="lg" className="text-lg px-8 py-6">
-              Login <ArrowRight className="ml-2 h-5 w-5" />
+          <Link href="/signup">
+            <Button size="lg" className="text-lg px-12 py-6 shadow-lg hover:shadow-xl transition-all">
+              Get Started <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
           
-          <Link href="/signup">
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-              Sign Up
-            </Button>
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/login">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                Login
+              </Button>
+            </Link>
+            
+            <Link href="/signup">
+              <Button size="lg" variant="ghost" className="text-lg px-8 py-6">
+                Sign Up
+              </Button>
+            </Link>
+          </div>
         </motion.div>
 
         <motion.div
