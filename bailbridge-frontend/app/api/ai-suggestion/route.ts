@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-const GEMINI_API_KEY = 'AIzaSyBWMKvKnp2vJJssdlN39hMZG1LR-3QIJw4';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 interface BailRequest {
   name: string;
@@ -21,51 +21,123 @@ export async function POST(request: NextRequest) {
   try {
     const data: BailRequest = await request.json();
 
-    // Load BNS sections data (in production, you might want to cache this)
     const bnsDataResponse = await fetch(`${request.nextUrl.origin}/bns_sections.csv`);
     const bnsDataText = await bnsDataResponse.text();
     
-    // Parse CSV to find relevant sections
+
     const lines = bnsDataText.split('\n');
     const relevantSections = lines.filter(line => {
       const lowerLine = line.toLowerCase();
       return lowerLine.includes(data.sectionNumber.toLowerCase()) || 
              lowerLine.includes(data.offenseType.toLowerCase());
-    }).slice(0, 5); // Limit to 5 most relevant sections
+    }).slice(0, 10); 
 
     const bnsContext = relevantSections.join('\n');
 
-    // Construct prompt for Gemini
-    const prompt = `You are an expert legal AI assistant specializing in Indian criminal law and bail applications under the Bharatiya Nyaya Sanhita (BNS), 2023.
+    
+    const prompt = `You are an expert legal AI assistant and bail eligibility analyzer specializing in Indian criminal law under the Bharatiya Nyaya Sanhita (BNS), 2023.
 
-Based on the following case details, provide a comprehensive bail eligibility analysis:
+Your task is to provide a COMPREHENSIVE and DEFINITIVE bail eligibility analysis that clearly determines whether the accused is likely to GET BAIL or NOT GET BAIL.
 
-**Case Details:**
+**ACCUSED PERSON DETAILS:**
 - Name: ${data.name}
 - Age: ${data.age}
 - Gender: ${data.gender}
 - Offense Type: ${data.offenseType}
-- Section Number: ${data.sectionNumber}
+- BNS Section Number: ${data.sectionNumber}
 - Prior Convictions: ${data.priorConvictions ? 'Yes' : 'No'}
 - Employment Status: ${data.employmentStatus}
 - Family Ties: ${data.familyTies}
 - Criminal History: ${data.criminalHistory}
 ${data.additionalDetails ? `- Additional Details: ${data.additionalDetails}` : ''}
 
-**Relevant BNS Sections:**
+**RELEVANT BNS SECTIONS FROM DATABASE:**
 ${bnsContext}
 
-Please provide a detailed analysis including:
-1. **Bail Eligibility Assessment**: Determine if the accused is likely eligible for bail based on the offense type, section, and case details.
-2. **Legal Reasoning**: Explain the legal grounds supporting or opposing bail under BNS provisions.
-3. **Risk Factors**: Identify any factors that might affect bail (flight risk, evidence tampering, etc.).
-4. **Recommendations**: Suggest conditions that might be imposed if bail is granted.
-5. **Precedents**: Mention any relevant legal principles or precedents that apply.
-6. **Overall Likelihood**: Provide a percentage likelihood of bail being granted (e.g., 65% likely).
+**INSTRUCTIONS FOR ANALYSIS:**
+You MUST provide a detailed analysis that covers ALL of the following sections. Use the BNS sections data above to make informed decisions.
 
-Format your response in a clear, structured manner suitable for legal professionals and defendants.`;
+---
 
-    // Call Gemini API using axios
+## 1. FINAL BAIL DECISION
+**START WITH THIS - CLEARLY STATE: "BAIL LIKELY TO BE GRANTED" OR "BAIL UNLIKELY TO BE GRANTED" OR "BAIL DECISION UNCERTAIN"**
+
+Provide the percentage likelihood: X% chance of bail being granted
+
+---
+
+## 2. OFFENSE CLASSIFICATION & SEVERITY
+- Classify the offense (Bailable/Non-bailable/Cognizable/Non-cognizable)
+- Analyze the severity based on BNS Section ${data.sectionNumber}
+- Specify punishment provisions (imprisonment duration, fines)
+- Explain if this is a scheduled offense under CrPC provisions
+
+---
+
+## 3. LEGAL GROUNDS ANALYSIS
+**Factors SUPPORTING Bail:**
+- List all positive factors (age, first-time offender, family ties, employment, etc.)
+- Reference specific BNS provisions that support bail
+
+**Factors OPPOSING Bail:**
+- List all negative factors (prior convictions, severity of crime, flight risk, etc.)
+- Reference specific BNS provisions that oppose bail
+
+---
+
+## 4. RISK ASSESSMENT
+Evaluate the following risks:
+- **Flight Risk**: Likelihood of accused absconding (Low/Medium/High)
+- **Evidence Tampering Risk**: Risk of interfering with witnesses/evidence (Low/Medium/High)
+- **Public Safety Risk**: Danger to society if released (Low/Medium/High)
+- **Repeat Offense Risk**: Likelihood of committing another crime (Low/Medium/High)
+
+---
+
+## 5. BAIL CONDITIONS (IF GRANTED)
+If bail is likely to be granted, specify the probable conditions:
+- Monetary surety/bond amount (estimated)
+- Regular reporting to police station
+- Travel restrictions
+- Surrendering passport
+- Other specific conditions
+
+---
+
+## 6. LEGAL PRECEDENTS & PROVISIONS
+- Cite relevant Supreme Court/High Court precedents on similar cases
+- Reference CrPC sections (437, 439) applicable
+- Mention landmark judgments if applicable
+
+---
+
+## 7. DETAILED REASONING
+Provide a comprehensive paragraph explaining:
+- Why the person will/will not get bail based on case specifics
+- How the BNS section influences the decision
+- Impact of personal circumstances (age, family, employment)
+- Weight given to prior convictions and criminal history
+
+---
+
+## 8. ALTERNATIVE REMEDIES
+If bail is unlikely:
+- Suggest approaching High Court under Section 439 CrPC
+- Mention possibility of anticipatory bail
+- Other legal recourse available
+
+---
+
+## 9. TIMELINE & PROCESS
+- Expected time for bail hearing
+- Documents required
+- Steps in the bail application process
+
+---
+
+**IMPORTANT**: Base your analysis STRICTLY on Indian law, BNS provisions, and the specific BNS sections provided. Be definitive in your conclusion - the user needs a clear answer on bail eligibility.`;
+
+    
     const geminiResponse = await axios.post(
       `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
       {
@@ -75,8 +147,8 @@ Format your response in a clear, structured manner suitable for legal profession
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
+          temperature: 0.4,
+          maxOutputTokens: 4096,
         },
         safetySettings: [
           {
@@ -104,7 +176,7 @@ Format your response in a clear, structured manner suitable for legal profession
       }
     );
     
-    // Extract the generated text
+    
     const suggestion = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || 
                       'Unable to generate suggestion at this time.';
 
@@ -117,7 +189,7 @@ Format your response in a clear, structured manner suitable for legal profession
   } catch (error) {
     console.error('AI Suggestion Error:', error);
     
-    // Handle axios errors
+
     if (axios.isAxiosError(error)) {
       console.error('Gemini API Error:', error.response?.data);
       return NextResponse.json(
