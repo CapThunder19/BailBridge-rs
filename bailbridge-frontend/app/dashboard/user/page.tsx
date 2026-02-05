@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
+import AISuggestionModal from '@/components/AISuggestionModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -15,12 +16,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { User, FileText, Scale, LogOut, Bell, Settings, UserCircle2, Mail, Shield } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 
 export default function UserDashboard() {
   const router = useRouter();
   const [username, setUsername] = useState<string>('User');
   const [email, setEmail] = useState<string>('user@example.com');
   const [role, setRole] = useState<string>('user');
+  const [showAIModal, setShowAIModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -149,7 +152,10 @@ export default function UserDashboard() {
                         Get AI-powered bail eligibility analysis
                       </p>
                     </div>
-                    <Button className="w-full bg-transparent border-2 border-[#4A5F7F] text-gray-900 dark:text-[#B8C4D9] hover:bg-[#4A5F7F] hover:text-white rounded-full transition-all shadow-sm">
+                    <Button 
+                      onClick={() => setShowAIModal(true)}
+                      className="w-full bg-transparent border-2 border-[#4A5F7F] text-gray-900 dark:text-[#B8C4D9] hover:bg-[#4A5F7F] hover:text-white rounded-full transition-all shadow-sm"
+                    >
                       Check Now
                     </Button>
                   </CardContent>
@@ -266,6 +272,15 @@ export default function UserDashboard() {
           </Card>
         </motion.div>
       </div>
+
+      {/* AI Suggestion Modal */}
+      <AISuggestionModal 
+        isOpen={showAIModal} 
+        onClose={() => setShowAIModal(false)} 
+      />
+
+      {/* Toast Notifications */}
+      <Toaster position="top-right" />
     </div>
   );
 }
