@@ -8,6 +8,8 @@ use axum::{
 
 use crate::{auth::jwt::verify_jwt, config::Config};
 
+// Will be used for protected routes
+#[allow(dead_code)]
 pub async fn auth_middleware( State(config): State<Config>, req: Request<Body>,  next: Next, ) -> Result<Response, StatusCode> {
     let auth_header = req
         .headers()

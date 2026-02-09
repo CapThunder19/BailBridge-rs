@@ -22,7 +22,7 @@ async fn main() {
     .merge(routes::create_routes(db_pool, config))
     .layer(
         CorsLayer::new()
-            .allow_origin(["http://localhost:3000".parse().unwrap()])
+            .allow_origin(Any)
             .allow_methods(Any)
             .allow_headers(Any)
     );

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
+// Will be used for fetching user data in protected routes
+#[allow(dead_code)]
 #[derive(sqlx::FromRow, Serialize)]
 pub struct User {
     pub id: Uuid,

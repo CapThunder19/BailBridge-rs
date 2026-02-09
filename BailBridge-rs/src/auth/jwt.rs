@@ -24,6 +24,8 @@ pub fn create_jwt(user_id: &str, role: &str, secret: &str) -> Result<String, jso
     encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
 }
 
+// Will be used by auth_middleware for protected routes
+#[allow(dead_code)]
 pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let token_data = decode::<Claims>(token, &DecodingKey::from_secret(secret.as_ref()), &jsonwebtoken::Validation::default())?;
     Ok(token_data.claims)
