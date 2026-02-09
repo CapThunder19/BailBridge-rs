@@ -3,7 +3,7 @@ use serde::Serialize;
 use uuid::Uuid;
 use sqlx::Row;
 
-use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier, Algorithm, Version, Params};
 use password_hash::{SaltString, PasswordHash, rand_core::OsRng};
 
 use crate::{
@@ -24,7 +24,15 @@ pub struct AuthResponse {
 pub async fn register_user( State((db, config)): State<(DbPool, Config)>, Json(payload): Json<RegisterUser>) -> Result<Json<AuthResponse>, (StatusCode, String)> {
    
     let salt = SaltString::generate(&mut OsRng);
-    let hash_password = Argon2::default()
+    
+   
+    // m_cost: 19456 KiB, t_cost: 2, p_cost: 1
+    let params = Params::new(19456, 2, 1, None)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create Argon2 params: {}", e)))?;
+    
+    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+    
+    let hash_password = argon2
         .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to hash password: {}", e)))?
         .to_string();
