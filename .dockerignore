@@ -1,0 +1,13 @@
+target/
+**/*.rs.bk
+*.pdb
+.env
+.DS_Store
+node_modules/
+bailbridge-frontend/
+README.md
+*.md
+setup_*.sh
+setup_*.sql
+.git/
+.gitignore
