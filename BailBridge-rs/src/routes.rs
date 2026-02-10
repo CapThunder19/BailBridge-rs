@@ -22,8 +22,8 @@ pub fn create_routes(db: DbPool, config: Config) -> Router {
         .route("/bail-applications", post(create_bail_application))
         .route("/bail-applications/my", get(get_my_bail_applications))
         .route("/bail-applications/all", get(get_all_bail_applications_for_lawyer))
-        .route("/bail-applications/:application_number", get(get_bail_application))
-        .route("/bail-applications/:application_number/assign", post(assign_lawyer_to_case))
+        .route("/bail-applications/{application_number}", get(get_bail_application))
+        .route("/bail-applications/{application_number}/assign", post(assign_lawyer_to_case))
         .layer(axum::Extension(config))
         .with_state(db);
 
