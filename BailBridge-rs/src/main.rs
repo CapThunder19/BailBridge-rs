@@ -3,6 +3,7 @@ mod db;
 mod models;
 mod routes;
 mod auth;
+mod bail;
 
 use axum::{Router, routing::get};
 use dotenvy::dotenv;
