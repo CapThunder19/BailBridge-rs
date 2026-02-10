@@ -4,36 +4,45 @@ use axum::{
     middleware::Next,
     response::Response,
     body::Body,
-    async_trait,
 };
 
 use crate::{auth::jwt::{verify_jwt, Claims}, config::Config};
 
-#[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where
     S: Send + Sync,
 {
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         let auth_header = parts
             .headers
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
-            .ok_or((StatusCode::UNAUTHORIZED, "Missing authorization header".to_string()))?;
-
-        let token = auth_header
-            .strip_prefix("Bearer ")
-            .ok_or((StatusCode::UNAUTHORIZED, "Invalid authorization format".to_string()))?;
+            .map(|s| s.to_string());
 
         let config = parts
             .extensions
             .get::<Config>()
-            .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "Config not found".to_string()))?;
+            .cloned();
 
-        verify_jwt(token, &config.jwt_secret)
-            .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid token".to_string()))
+        async move {
+            let auth_header = auth_header
+                .ok_or((StatusCode::UNAUTHORIZED, "Missing authorization header".to_string()))?;
+
+            let token = auth_header
+                .strip_prefix("Bearer ")
+                .ok_or((StatusCode::UNAUTHORIZED, "Invalid authorization format".to_string()))?;
+
+            let config = config
+                .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "Config not found".to_string()))?;
+
+            verify_jwt(token, &config.jwt_secret)
+                .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid token".to_string()))
+        }
     }
 }
 

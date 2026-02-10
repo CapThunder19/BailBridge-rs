@@ -1,4 +1,4 @@
-use axum::{Router, routing::{post, get}, middleware, Extension};
+use axum::{Router, routing::{post, get}};
 use crate::{
     auth::handlers::{register_user, login_user},
     bail::handlers::{
@@ -9,7 +9,6 @@ use crate::{
     db::DbPool,
     config::Config,
 };
-
 
 pub fn create_routes(db: DbPool, config: Config) -> Router {
 
@@ -25,14 +24,7 @@ pub fn create_routes(db: DbPool, config: Config) -> Router {
         .route("/bail-applications/all", get(get_all_bail_applications_for_lawyer))
         .route("/bail-applications/:application_number", get(get_bail_application))
         .route("/bail-applications/:application_number/assign", post(assign_lawyer_to_case))
-        .layer(middleware::from_fn(move |req, next| {
-            let config = config.clone();
-            async move {
-                let mut req = req;
-                req.extensions_mut().insert(config);
-                next.run(req).await
-            }
-        }))
+        .layer(axum::Extension(config))
         .with_state(db);
 
     Router::new()

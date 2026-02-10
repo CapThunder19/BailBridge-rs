@@ -88,7 +88,7 @@ pub struct BailApplicationResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct BailApplicationSummary {
     pub id: Uuid,
     pub application_number: String,
