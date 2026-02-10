@@ -2,6 +2,7 @@ use axum::{Json, extract::State, http::StatusCode};
 use serde::Serialize;
 use uuid::Uuid;
 use sqlx::Row;
+use std::sync::OnceLock;
 
 use argon2::{Argon2, PasswordHasher, PasswordVerifier, Algorithm, Version, Params};
 use password_hash::{SaltString, PasswordHash, rand_core::OsRng};
@@ -13,6 +14,16 @@ use crate::{
     config::Config,
 };
 
+// Reusable Argon2 instance - created once and reused
+static ARGON2: OnceLock<Argon2<'static>> = OnceLock::new();
+
+fn get_argon2() -> &'static Argon2<'static> {
+    ARGON2.get_or_init(|| {
+        let params = Params::new(15000, 2, 1, None)
+            .expect("Failed to create Argon2 params");
+        Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
+    })
+}
 
 #[derive(Serialize)]
 pub struct AuthResponse {
@@ -24,13 +35,7 @@ pub struct AuthResponse {
 pub async fn register_user( State((db, config)): State<(DbPool, Config)>, Json(payload): Json<RegisterUser>) -> Result<Json<AuthResponse>, (StatusCode, String)> {
    
     let salt = SaltString::generate(&mut OsRng);
-    
-   
-    // m_cost: 19456 KiB, t_cost: 2, p_cost: 1
-    let params = Params::new(19456, 2, 1, None)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create Argon2 params: {}", e)))?;
-    
-    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+    let argon2 = get_argon2();
     
     let hash_password = argon2
         .hash_password(payload.password.as_bytes(), &salt)
@@ -77,12 +82,10 @@ pub async fn login_user( State((db, config)): State<(DbPool, Config)>, Json(payl
     let parsed_hash = PasswordHash::new(&password_hash)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to parse password hash: {}", e)))?;
 
-
-    
-    Argon2::default()
+    // Use shared Argon2 instance for verification
+    get_argon2()
         .verify_password(payload.password.as_bytes(), &parsed_hash)
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid password".to_string()))?;
-
 
     let token = create_jwt(&id.to_string(), &role, &config.jwt_secret)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create JWT: {}", e)))?;
