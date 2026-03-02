@@ -14,14 +14,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
-import { Briefcase, FileText, Users, LogOut, Bell, Settings, Scale, UserCircle2, Mail, Shield, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Briefcase, FileText, Users, LogOut, Bell, Settings, Scale, UserCircle2, Mail, Shield, TrendingUp, Clock, CheckCircle, XCircle, Eye, UserCheck } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { api, setAuthToken } from '@/lib/api';
+
+interface BailApplication {
+  application_number: string;
+  applicant_name: string;
+  fir_number: string;
+  bail_type: string;
+  status: string;
+  date_of_arrest: string;
+  district: string;
+  state: string;
+  sections_applied: string;
+}
 
 export default function LawyerDashboard() {
   const router = useRouter();
   const [username, setUsername] = useState<string>('Lawyer');
   const [email, setEmail] = useState<string>('lawyer@example.com');
   const [role, setRole] = useState<string>('lawyer');
+  const [availableApplications, setAvailableApplications] = useState<BailApplication[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -39,8 +55,40 @@ export default function LawyerDashboard() {
     }
 
     setRole(storedRole || 'lawyer');
-    // TODO: Fetch actual user data from API using token
+    setAuthToken(token);
+    fetchAvailableApplications();
   }, [router]);
+
+  const fetchAvailableApplications = async () => {
+    try {
+      setLoading(true);
+      const applications = await api.getAllBailApplications();
+      // Filter for pending applications without assigned lawyer
+      const available = applications.filter((app: BailApplication) => 
+        app.status === 'pending' || app.status === 'submitted'
+      );
+      setAvailableApplications(available);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch applications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptCase = async (applicationNumber: string) => {
+    try {
+      await api.assignLawyerToCase(applicationNumber);
+      alert('Case accepted successfully!');
+      fetchAvailableApplications(); // Refresh the list
+      router.push('/dashboard/lawyer/cases');
+    } catch (err: any) {
+      alert(err.message || 'Failed to accept case');
+    }
+  };
+
+  const handleViewDetails = (applicationNumber: string) => {
+    router.push(`/dashboard/lawyer/cases/${applicationNumber}`);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -362,6 +410,118 @@ export default function LawyerDashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Available Bail Applications */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-[#25343F] dark:text-white">Available Bail Applications</h3>
+              <Button 
+                onClick={fetchAvailableApplications}
+                variant="outline"
+                disabled={loading}
+              >
+                {loading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </div>
+
+            {error && (
+              <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            {availableApplications.length === 0 ? (
+              <Card className="shadow-lg">
+                <CardContent className="p-12 text-center">
+                  <Scale className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {loading ? 'Loading applications...' : 'No pending bail applications available at the moment'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {availableApplications.map((application) => (
+                  <motion.div
+                    key={application.application_number}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <Card className="shadow-lg hover:shadow-xl transition-all border-l-4 border-l-[#FF9B51]">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row justify-between gap-4">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="text-xl font-bold text-[#25343F] dark:text-white mb-1">
+                                  {application.applicant_name}
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  Application #{application.application_number}
+                                </p>
+                              </div>
+                              <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
+                                {application.status.toUpperCase()}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400">FIR Number</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{application.fir_number}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400">Bail Type</p>
+                                <p className="font-semibold text-gray-900 dark:text-white capitalize">{application.bail_type}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400">Location</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{application.district}, {application.state}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400">Sections</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{application.sections_applied}</p>
+                              </div>
+                            </div>
+
+                            <div className="text-sm">
+                              <p className="text-gray-500 dark:text-gray-400">Date of Arrest</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">
+                                {new Date(application.date_of_arrest).toLocaleDateString('en-IN', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex md:flex-col gap-2 justify-end">
+                            <Button
+                              onClick={() => handleViewDetails(application.application_number)}
+                              variant="outline"
+                              className="flex-1 md:flex-none gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Details
+                            </Button>
+                            <Button
+                              onClick={() => handleAcceptCase(application.application_number)}
+                              className="flex-1 md:flex-none bg-[#FF9B51] hover:bg-[#FF8A3D] text-white gap-2"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                              Accept Case
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Actions */}

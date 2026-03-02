@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { setAuthToken } from '@/lib/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +40,7 @@ export default function JudgeDashboard() {
     }
 
     setRole(storedRole || 'judge');
-    // TODO: Fetch actual user data from API using token
+    setAuthToken(token);
   }, [router]);
 
   const handleLogout = () => {

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, setAuthToken } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,15 @@ export default function NewBailApplicationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [applicationNumber, setApplicationNumber] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setAuthToken(token);
+    } else {
+      router.push('/login');
+    }
+  }, [router]);
 
   const [formData, setFormData] = useState({
     // Personal Information

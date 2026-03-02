@@ -6,6 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import AISuggestionModal from '@/components/AISuggestionModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { setAuthToken } from '@/lib/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +43,7 @@ export default function UserDashboard() {
     }
 
     setRole(storedRole || 'user');
-    // TODO: Fetch actual user data from API using token
+    setAuthToken(token);
   }, [router]);
 
   const handleLogout = () => {
@@ -249,7 +250,7 @@ export default function UserDashboard() {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div id="application-status-section" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Application Status Distribution */}
             <Card className="shadow-lg">
               <CardHeader>
@@ -412,7 +413,10 @@ export default function UserDashboard() {
                         Submit application
                       </p>
                     </div>
-                    <Button className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs">
+                    <Button 
+                      onClick={() => router.push('/dashboard/user/new-application')}
+                      className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs"
+                    >
                       Fill Form
                     </Button>
                   </CardContent>
@@ -435,7 +439,15 @@ export default function UserDashboard() {
                         Track progress
                       </p>
                     </div>
-                    <Button className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs">
+                    <Button 
+                      onClick={() => {
+                        const statusSection = document.getElementById('application-status-section');
+                        if (statusSection) {
+                          statusSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                      className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs"
+                    >
                       View Status
                     </Button>
                   </CardContent>
@@ -458,7 +470,10 @@ export default function UserDashboard() {
                         Upload files
                       </p>
                     </div>
-                    <Button className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs">
+                    <Button 
+                      onClick={() => alert('Document upload feature coming soon!')}
+                      className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs"
+                    >
                       Upload
                     </Button>
                   </CardContent>
@@ -481,7 +496,10 @@ export default function UserDashboard() {
                         Get support
                       </p>
                     </div>
-                    <Button className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs">
+                    <Button 
+                      onClick={() => window.location.href = 'mailto:support@bailbridge.com'}
+                      className="w-full bg-[#FF9B51] hover:bg-[#FF8A3D] text-white rounded-full text-xs"
+                    >
                       Contact
                     </Button>
                   </CardContent>
